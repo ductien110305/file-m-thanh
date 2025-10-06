@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thiệp Trung Thu ✨</title>
+  <style>
+    :root {
+      --accent: #ff7f50;
+      --accent-2: #ff5722;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Poppins", "Segoe UI", sans-serif;
+      background: #060614;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    canvas#starfield {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .moon {
+      position: fixed;
+      top: 40px;
+      right: 60px;
+      width: 150px;
+      height: 150px;
+      pointer-events: none;
+      z-index: 2;
+      animation: moonFloat 6s ease-in-out infinite;
+    }
+    
+    .moon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 40px rgba(255, 220, 100, 0.6))
+              drop-shadow(0 0 80px rgba(255, 240, 150, 0.4));
+    }
+    
+    @keyframes moonFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+    }
+
+    #lantern-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .lantern {
+      position: absolute;
+      pointer-events: none;
+      width: 40px;
+      user-select: none;
+    }
+
+    @keyframes swing {
+      0% { transform: rotate(-5deg); }
+      50% { transform: rotate(5deg); }
+      100% { transform: rotate(-5deg); }
+    }
+    .swing {
+      animation: swing 2s ease-in-out infinite;
+    }
+
+    @keyframes sway {
+      0%   { transform: translate(-50%, -50%) rotate(-1deg); }
+      50%  { transform: translate(-50%, -50%) rotate(1deg); }
+      100% { transform: translate(-50%, -50%) rotate(-1deg); }
+    }
+
+    #hint {
+      position: fixed;
+      bottom: 10vh;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      background: linear-gradient(90deg, rgba(255, 127, 80, 0.95), rgba(255, 87, 34, 0.95));
+      color: white;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 9998;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: opacity .4s ease;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .controls {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      z-index: 9999;
+      color: #fff;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px 14px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(6px);
+    }
+
+    .music-toggle {
+      cursor: pointer;
+      color: #fff;
+      opacity: 0.95;
+      user-select: none;
+      font-size: 22px;
+      transition: transform 0.2s;
+    }
+
+    .music-toggle:hover {
+      transform: scale(1.1);
+    }
+
+    .card {
+      width: 480px;
+      height: 280px;
+      perspective: 1200px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 50;
+      animation: sway 5s ease-in-out infinite;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .card.open .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      backface-visibility: hidden;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    .card-front {
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fbc2eb 100%);
+      color: #fff;
+    }
+
+    .card-front h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin: 0;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .card-front .recipient {
+      font-size: 1rem;
+      font-weight: 500;
+      margin: 1px 0 0 0;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .card-front p {
+      font-size: 1rem;
+      margin: 0;
+      opacity: 0.95;
+      font-weight: 500;
+    }
+
+    .card-back {
+      background: 
+        linear-gradient(135deg, rgba(255,154,158,0.1) 0%, rgba(250,208,196,0.15) 100%),
+        radial-gradient(circle at 20% 30%, rgba(255,215,0,0.3), transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255,127,80,0.2), transparent 35%),
+        #fffaf5;
+      color: #333;
+      transform: rotateY(180deg);
+      font-size: 1.1rem;
+      line-height: 1.8;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-back::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    .card-back::after {
+      content: '🌸 ✨ 🌙 ⭐ 🏮';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.2rem;
+      opacity: 0.6;
+      letter-spacing: 15px;
+      animation: floatIcons 4s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
+      50% { transform: rotate(180deg) scale(1.1); opacity: 0.5; }
+    }
+
+    @keyframes floatIcons {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    .card-back p {
+      animation: fadeInUp 0.9s ease;
+      margin: 0;
+      color: #ff5722;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+      padding: 0 10px;
+    }
+
+    .sparkle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: radial-gradient(circle, #ffd700, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: sparkleFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkleFloat {
+      0% { transform: translateY(0) scale(0); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        width: 90vw;
+        max-width: 360px;
+        height: 240px;
+      }
+      .card-front h2 { font-size: 1.4rem; }
+      .card-front p { font-size: 0.9rem; }
+      .card-back { font-size: 0.95rem; padding: 20px; }
+      .moon { width: 120px; height: 120px; top: 15px; right: 15px; }
+      #hint { font-size: 12px; bottom: 8vh; padding: 10px 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        height: 200px;
+      }
+      .card-front h2 { font-size: 1.2rem; }
+      .card-back { font-size: 0.85rem; }
+      .controls { left: 10px; top: 10px; padding: 8px 10px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="stage">
+    <canvas id="starfield"></canvas>
+    <div class="moon">
+      <img src="https://raw.githubusercontent.com/ductien110305/file-m-thanh/main/moon1.png" alt="Mid-Autumn Moon">
+    </div>
+    <div id="lantern-container"></div>
+
+    <div class="card" id="card">
+      <div class="card-inner">
+        <div class="card-front">
+          <h2>🌕 Trung Thu Vui Vẻ 🌕</h2>
+          <p class="recipient">Gửi bạn M.Anh</p>
+          <p style="margin-top: 15px;">✨ Nhấn để mở thiệp ✨</p>
+        </div>
+        <div class="card-back">
+          <p id="wish-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="hint">🎵 Chạm màn hình để bật nhạc 🎵</div>
+
+    <div class="controls">
+      <span class="music-toggle" id="musicToggle" title="Bật / Tắt nhạc">🔈</span>
+    </div>
+  </div>
+
+  <audio id="bg-music" loop>
+    <source src="https://raw.githubusercontent.com/ductien110305/file-m-thanh/main/nhac_1 (mp3cut.net).mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let w, h, stars = [], meteors = [];
+
+    function resizeCanvas() {
+      w = canvas.width = innerWidth;
+      h = canvas.height = innerHeight;
+      stars = [];
+      const count = Math.round((w * h) / 2200);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 0.9 + 0.1,
+          a: Math.random() * 0.8 + 0.2,
+          t: Math.random() * 0.02 + 0.002
+        });
+      }
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, w, h);
+      for (const s of stars) {
+        s.a += (Math.random() > 0.5 ? 1 : -1) * s.t;
+        s.a = Math.max(0.05, Math.min(1, s.a));
+        ctx.beginPath();
+        ctx.globalAlpha = s.a;
+        ctx.fillStyle = '#fff';
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function createMeteor() {
+      const startX = Math.random() * w;
+      const startY = Math.random() * (h / 3);
+      const speed = Math.random() * 10 + 6;
+      meteors.push({ 
+        x: startX, 
+        y: startY, 
+        vx: speed + 6, 
+        vy: speed / 2, 
+        len: Math.random() * 120 + 100, 
+        a: 1 
+      });
+    }
+
+    function drawMeteors() {
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        const x2 = m.x - m.len;
+        const y2 = m.y - m.len / 2;
+        const g = ctx.createLinearGradient(m.x, m.y, x2, y2);
+        g.addColorStop(0, `rgba(255,255,255,${m.a})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        m.x += m.vx; 
+        m.y += m.vy; 
+        m.a -= 0.02;
+        if (m.a <= 0 || m.x > w + 200 || m.y > h + 200) {
+          meteors.splice(i, 1);
+        }
+      }
+    }
+
+    function loop() {
+      drawStars();
+      drawMeteors();
+      if (Math.random() < 0.01) createMeteor();
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    loop();
+
+    const lanternContainer = document.getElementById('lantern-container');
+    
+    function createLantern() {
+      const lantern = document.createElement("img");
+      lantern.src = "https://github.com/Panbap/Trungthu/blob/main/den.png?raw=true";
+      lantern.className = "lantern swing";
+      
+      const layer = Math.floor(Math.random() * 3) + 1;
+      let size = 40, duration = 10000, opacity = 0.8;
+      
+      if (layer === 1) { 
+        size = 20 + Math.random() * 20; 
+        duration = 14000 + Math.random() * 5000; 
+        opacity = 0.5; 
+      } else if (layer === 2) { 
+        size = 30 + Math.random() * 30; 
+        duration = 12000 + Math.random() * 4000; 
+        opacity = 0.7; 
+      } else { 
+        size = 40 + Math.random() * 40; 
+        duration = 10000 + Math.random() * 3000; 
+        opacity = 0.95; 
+      }
+      
+      lantern.style.width = size + "px";
+      lantern.style.left = Math.random() * 90 + "vw";
+      lantern.style.bottom = "-50px";
+      lantern.style.opacity = opacity;
+      lanternContainer.appendChild(lantern);
+      
+      const drift = Math.random() * 140 - 70;
+      const up = 120 + Math.random() * 40;
+      
+      lantern.animate([
+        { transform: "translate(0,0)", opacity: opacity },
+        { transform: `translate(${drift}px, -${up}vh)`, opacity: 0 }
+      ], { 
+        duration: duration, 
+        easing: "linear", 
+        fill: "forwards" 
+      });
+      
+      setTimeout(() => lantern.remove(), duration);
+    }
+
+    setInterval(createLantern, 700);
+    for (let i = 0; i < 5; i++) { 
+      setTimeout(createLantern, i * 500); 
+    }
+
+    const bg = document.getElementById('bg-music');
+    const musicToggle = document.getElementById('musicToggle');
+    const hint = document.getElementById('hint');
+    let musicStarted = false;
+
+    function startMusic() {
+      if (musicStarted) return;
+      bg.volume = 0;
+      bg.play().then(() => {
+        let v = 0;
+        const fadeIn = setInterval(() => {
+          v += 0.05;
+          if (v >= 0.6) { 
+            v = 0.6; 
+            clearInterval(fadeIn); 
+          }
+          bg.volume = v;
+        }, 100);
+        musicStarted = true;
+        musicToggle.textContent = '🔊';
+        hint.style.opacity = '1';
+        setTimeout(() => hint.style.opacity = '0', 3000);
+      }).catch(() => {
+        console.log('Nhạc cần tương tác người dùng');
+      });
+    }
+
+    musicToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!musicStarted) { 
+        startMusic(); 
+        return; 
+      }
+      if (bg.paused) { 
+        bg.play(); 
+        musicToggle.textContent = '🔊'; 
+      } else { 
+        bg.pause(); 
+        musicToggle.textContent = '🔈'; 
+      }
+    });
+
+    document.addEventListener('click', function startOnce() {
+      startMusic();
+      document.removeEventListener('click', startOnce);
+    }, { once: true });
+
+    const wishes = [
+      "Chúc bạn có một Trung Thu thật ấm áp, đầy tiếng cười và ánh trăng đẹp như mơ 🌕✨",
+      "Trung Thu này chúc bạn luôn vui vẻ, bình an và ngập tràn hạnh phúc 🍰🎑",
+      "Chúc bạn sắp tới thi cử sẽ đạt được điểm thật cao nhe!🧡🧡 💫",
+      "Chúc bạn sớm ngày thoát khỏi nỗi buồn, đón nhận thêm nhiều điều tốt đẹp mới   🧡🌕",
+      "heheheh!"
+    ];
+
+    const card = document.getElementById("card");
+    const wishText = document.getElementById("wish-text");
+
+    card.addEventListener("click", (e) => {
+      e.stopPropagation();
+  
+      if (!musicStarted) {
+        startMusic();
+      }
+  
+      const isOpen = card.classList.toggle("open");
+      if (isOpen) {
+        wishText.textContent = wishes[Math.floor(Math.random() * wishes.length)];
+        createSparkles();
+      }
+    });
+
+    function createSparkles() {
+      const cardBack = document.querySelector('.card-back');
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const sparkle = document.createElement('div');
+          sparkle.className = 'sparkle';
+          sparkle.style.left = Math.random() * 100 + '%';
+          sparkle.style.bottom = '0';
+          sparkle.style.animationDelay = Math.random() * 0.5 + 's';
+          sparkle.style.animationDuration = (Math.random() * 1 + 1.5) + 's';
+          cardBack.appendChild(sparkle);
+          
+          setTimeout(() => sparkle.remove(), 2500);
+        }, i * 100);
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!card.contains(e.target) && card.classList.contains('open')) {
+        card.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
